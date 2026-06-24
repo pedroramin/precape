@@ -1,0 +1,163 @@
+from __future__ import annotations
+
+import hashlib
+import os
+import sqlite3
+from pathlib import Path
+from typing import Any, Iterable
+
+BASE_DIR = Path(__file__).resolve().parents[2]
+STORAGE_DIR = BASE_DIR / "storage"
+DB_PATH = STORAGE_DIR / "precatorios.db"
+UPLOAD_DIR = STORAGE_DIR / "uploads"
+EXPORT_DIR = STORAGE_DIR / "exports"
+
+for folder in (STORAGE_DIR, UPLOAD_DIR, EXPORT_DIR):
+    folder.mkdir(parents=True, exist_ok=True)
+
+
+def get_conn() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+
+def hash_password(password: str, salt: str | None = None) -> str:
+    if salt is None:
+        salt = os.urandom(16).hex()
+    digest = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), bytes.fromhex(salt), 200_000)
+    return f"{salt}${digest.hex()}"
+
+
+def verify_password(password: str, stored: str) -> bool:
+    try:
+        salt, _ = stored.split("$", 1)
+        return hash_password(password, salt) == stored
+    except Exception:
+        return False
+
+
+def init_db() -> None:
+    conn = get_conn()
+    cur = conn.cursor()
+    cur.executescript(
+        """
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome TEXT NOT NULL,
+            email TEXT NOT NULL UNIQUE,
+            senha_hash TEXT NOT NULL,
+            perfil TEXT NOT NULL DEFAULT 'admin',
+            ativo INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS listas (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_arquivo TEXT NOT NULL,
+            arquivo_path TEXT NOT NULL,
+            pdf_path TEXT NOT NULL,
+            codigo_arquivo TEXT,
+            hash_pdf TEXT NOT NULL,
+            total_registros INTEGER NOT NULL DEFAULT 0,
+            novos_count INTEGER NOT NULL DEFAULT 0,
+            removidos_count INTEGER NOT NULL DEFAULT 0,
+            mantidos_count INTEGER NOT NULL DEFAULT 0,
+            valores_relatorio_id INTEGER,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS precatorios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            lista_id INTEGER NOT NULL,
+            status_comparacao TEXT NOT NULL,
+            ordem_pagamento TEXT,
+            processo_depre TEXT,
+            processo_origem TEXT,
+            ordem_orcamentaria TEXT,
+            natureza TEXT,
+            suspenso TEXT,
+            data_protocolo TEXT,
+            advogado_pdf TEXT,
+            devedora TEXT,
+            UNIQUE(lista_id, processo_depre, processo_origem, ordem_pagamento),
+            FOREIGN KEY(lista_id) REFERENCES listas(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS consultas_esaj (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            precatorio_id INTEGER NOT NULL,
+            processo_origem TEXT NOT NULL,
+            credor_nome TEXT,
+            tipo_participacao TEXT,
+            classe TEXT,
+            area TEXT,
+            assunto TEXT,
+            foro TEXT,
+            vara TEXT,
+            link_esaj TEXT,
+            status TEXT NOT NULL,
+            observacao TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(precatorio_id),
+            FOREIGN KEY(precatorio_id) REFERENCES precatorios(id)
+        );
+
+        CREATE TABLE IF NOT EXISTS relatorios_valores (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            nome_arquivo TEXT NOT NULL,
+            arquivo_path TEXT NOT NULL,
+            pdf_path TEXT NOT NULL,
+            codigo_arquivo TEXT,
+            hash_pdf TEXT NOT NULL,
+            entidade TEXT,
+            saldo_atualizado_em TEXT,
+            total_registros INTEGER NOT NULL DEFAULT 0,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE IF NOT EXISTS valores_precatorios (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            relatorio_id INTEGER NOT NULL,
+            processo_depre TEXT NOT NULL,
+            natureza TEXT,
+            protocolo TEXT,
+            numero_ordem TEXT,
+            data_ensejo_ordem TEXT,
+            condicao_superpreferencia TEXT,
+            valor_pago REAL,
+            saldo REAL,
+            ano_orcamentario TEXT,
+            created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE(relatorio_id, processo_depre),
+            FOREIGN KEY(relatorio_id) REFERENCES relatorios_valores(id)
+        );
+        """
+    )
+    # Migração simples para bancos criados em versões anteriores.
+    cols = [r[1] for r in cur.execute("PRAGMA table_info(listas)").fetchall()]
+    if "valores_relatorio_id" not in cols:
+        cur.execute("ALTER TABLE listas ADD COLUMN valores_relatorio_id INTEGER")
+
+    user = cur.execute("SELECT id FROM users WHERE email=?", ("admin@precatorios.local",)).fetchone()
+    if not user:
+        cur.execute(
+            "INSERT INTO users (nome, email, senha_hash, perfil) VALUES (?, ?, ?, ?)",
+            ("Administrador", "admin@precatorios.local", hash_password("admin123"), "admin"),
+        )
+    conn.commit()
+    conn.close()
+
+
+def one(query: str, params: Iterable[Any] = ()) -> sqlite3.Row | None:
+    conn = get_conn()
+    row = conn.execute(query, tuple(params)).fetchone()
+    conn.close()
+    return row
+
+
+def all_rows(query: str, params: Iterable[Any] = ()) -> list[sqlite3.Row]:
+    conn = get_conn()
+    rows = conn.execute(query, tuple(params)).fetchall()
+    conn.close()
+    return rows

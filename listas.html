@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<div class="login-card">
+  <h1>Entrar</h1>
+  <p>Sistema de prospecção de precatórios</p>
+  {% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <label>E-mail</label>
+    <input name="email" type="email" value="admin@precatorios.local" required>
+    <label>Senha</label>
+    <input name="senha" type="password" value="admin123" required>
+    <button type="submit">Entrar</button>
+  </form>
+</div>
+{% endblock %}

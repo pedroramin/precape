@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Análise da lista {{ lista.id }}{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Análise completa da lista #{{ lista.id }}</h1>
+    <p>{{ lista.nome_arquivo }}</p>
+  </div>
+  <div class="btn-row">
+    <a class="btn secondary" href="/listas/{{ lista.id }}/exportar">Exportar Excel</a>
+    <a class="btn" href="/listas/{{ lista.id }}/exportar-analise">Exportar análise completa</a>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card"><span>Total da lista</span><strong>{{ counts.total }}</strong></div>
+  <div class="card"><span>Novos</span><strong>{{ counts.novos }}</strong></div>
+  <div class="card"><span>Com nome e-SAJ</span><strong>{{ counts.com_credor }}</strong></div>
+  <div class="card"><span>Pendentes e-SAJ</span><strong>{{ counts.pendentes_esaj }}</strong></div>
+</div>
+
+<section class="panel">
+  <h2>Fluxo desta lista</h2>
+  <div class="steps">
+    <div class="step done"><b>1</b><span>Lista TJSP enviada</span></div>
+    <div class="step {% if rel_val %}done{% endif %}"><b>2</b><span>PDF de valores anexado</span></div>
+    <div class="step {% if counts.com_credor %}done{% endif %}"><b>3</b><span>Nomes consultados no e-SAJ</span></div>
+    <div class="step {% if rel_val and counts.com_credor %}done{% endif %}"><b>4</b><span>Análise final pronta</span></div>
+  </div>
+</section>
+
+<section class="panel grid2">
+  <div>
+    <h2>PDF de valores desta lista</h2>
+    {% if rel_val %}
+      <p><b>Arquivo:</b> {{ rel_val.nome_arquivo }}</p>
+      <p><b>Saldo atualizado em:</b> {{ rel_val.saldo_atualizado_em or '-' }}</p>
+      <p><b>Registros de valor:</b> {{ rel_val.total_registros }}</p>
+      <p class="hint">Este relatório está vinculado a esta lista e o cruzamento é feito pelo Processo DEPRE.</p>
+    {% else %}
+      <p class="hint">Anexe aqui o PDF de valores/dívida anual do mesmo município. O sistema cruza pelo Processo DEPRE e preenche saldo, valor pago e oferta sugerida.</p>
+    {% endif %}
+    <div class="btn-row values-actions">
+      <form method="post" action="/listas/{{ lista.id }}/baixar-valores-tjsp" onsubmit="return confirm('O sistema abrirá o TJSP em uma nova janela. Resolva o CAPTCHA e gere/baixe o PDF de valores. Assim que o download terminar, ele será anexado automaticamente a esta lista. Continuar?');">
+        <button type="submit">Baixar valores no TJSP e anexar automático</button>
+      </form>
+    </div>
+    <details class="manual-upload">
+      <summary>Ou anexar PDF de valores manualmente</summary>
+      <form method="post" action="/listas/{{ lista.id }}/valores-upload" enctype="multipart/form-data" class="inline-upload">
+        <input type="file" name="arquivo" accept=".pdf,.zip" required>
+        <button type="submit" class="secondary">Anexar arquivo manual</button>
+      </form>
+    </details>
+  </div>
+  <div>
+    <h2>Consulta dos nomes</h2>
+    <p class="hint">A consulta usa o Nº de autos/processo de origem no e-SAJ. O Processo DEPRE fica para cruzar com o relatório de valores.</p>
+    <form method="post" action="/listas/{{ lista.id }}/consultar-esaj" onsubmit="return confirm('Consultar todos os novos no e-SAJ? Isso pode demorar dependendo da quantidade.');">
+      <button type="submit">Consultar TODOS os novos no e-SAJ</button>
+    </form>
+    <form method="post" action="/listas/{{ lista.id }}/demo" class="demo-form">
+      <label>Teste/amostra</label>
+      <input name="quantidade" type="number" value="10" min="1" max="200">
+      <button type="submit" class="secondary">Consultar amostra</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel">
+  <h2>Resultado unificado</h2>
+  <p class="hint">Tabela única com lista TJSP + nome do e-SAJ + saldo/valor do PDF de valores. Mostrando até 300 registros; o Excel exporta a análise completa.</p>
+  <table>
+    <thead>
+      <tr>
+        <th>Status</th><th>Nome</th><th>Tipo</th><th>DEPRE</th><th>Nº de autos</th><th>Natureza</th><th>Saldo</th><th>Valor pago</th><th>Oferta sugerida</th><th>Situação</th><th>Obs.</th>
+      </tr>
+    </thead>
+    <tbody>
+    {% for r in novos %}
+      <tr>
+        <td><span class="badge {{ r.status_comparacao }}">{{ r.status_comparacao }}</span></td>
+        <td><strong>{{ r.credor_nome or '-' }}</strong></td>
+        <td>{{ r.tipo_participacao or '-' }}</td>
+        <td>{{ r.processo_depre }}</td>
+        <td>{{ r.processo_origem }}</td>
+        <td>{{ r.natureza }}</td>
+        <td><strong>{{ r.saldo|money_br }}</strong></td>
+        <td>{{ r.valor_pago|money_br }}</td>
+        <td><strong>{{ r.oferta_sugerida|money_br }}</strong></td>
+        <td>{{ r.status_esaj or 'pendente e-SAJ' }}</td>
+        <td>{{ r.observacao_esaj or '' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

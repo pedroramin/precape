@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Listas{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Listas TJSP</h1><p>Histórico de arquivos processados.</p></div><a class="btn" href="/listas/upload">Enviar lista</a></div>
+<section class="panel">
+<table>
+<thead><tr><th>ID</th><th>Arquivo</th><th>Código</th><th>Total</th><th>Novos</th><th>Removidos</th><th>Mantidos</th><th>Data</th><th></th></tr></thead>
+<tbody>
+{% for l in listas %}
+<tr><td>{{l.id}}</td><td>{{l.nome_arquivo}}</td><td>{{l.codigo_arquivo or '-'}}</td><td>{{l.total_registros}}</td><td>{{l.novos_count}}</td><td>{{l.removidos_count}}</td><td>{{l.mantidos_count}}</td><td>{{l.created_at}}</td><td><a href="/listas/{{l.id}}">abrir</a></td></tr>
+{% endfor %}
+</tbody></table>
+</section>
+{% endblock %}

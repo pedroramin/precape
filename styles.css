@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Valores{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Valores / dívida anual</h1><p>Relatórios de saldo atualizado importados do TJSP.</p></div><a class="btn" href="/valores/upload">Enviar relatório de valores</a></div>
+<section class="panel">
+<table>
+<thead><tr><th>ID</th><th>Arquivo</th><th>Entidade</th><th>Saldo atualizado em</th><th>Registros</th><th>Data importação</th><th></th></tr></thead>
+<tbody>
+{% for r in relatorios %}
+<tr><td>{{r.id}}</td><td>{{r.nome_arquivo}}</td><td>{{r.entidade or '-'}}</td><td>{{r.saldo_atualizado_em or '-'}}</td><td>{{r.total_registros}}</td><td>{{r.created_at}}</td><td><a href="/valores/{{r.id}}">abrir</a></td></tr>
+{% endfor %}
+</tbody></table>
+</section>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<div class="page-head">
+  <div>
+    <h1>Dashboard</h1>
+    <p>Visão geral da captura, comparação e consulta de credores.</p>
+  </div>
+  <a class="btn" href="/listas/upload">Enviar nova lista</a>
+</div>
+<div class="cards">
+  <div class="card"><span>Listas processadas</span><strong>{{ stats.listas }}</strong></div>
+  <div class="card"><span>Registros na base</span><strong>{{ stats.precatorios }}</strong></div>
+  <div class="card"><span>Marcados como novos</span><strong>{{ stats.novos }}</strong></div>
+  <div class="card"><span>Credores encontrados</span><strong>{{ stats.consultas_ok }}</strong></div>
+  <div class="card"><span>Relatórios de valores</span><strong>{{ stats.relatorios_valores }}</strong></div>
+  <div class="card"><span>Valores importados</span><strong>{{ stats.valores_importados }}</strong></div>
+</div>
+{% if ultimo_valor %}
+<section class="panel">
+  <h2>Último relatório de valores</h2>
+  <div class="grid2">
+    <p><b>Arquivo:</b> {{ ultimo_valor.nome_arquivo }}</p>
+    <p><b>Registros:</b> {{ ultimo_valor.total_registros }}</p>
+    <p><b>Saldo atualizado em:</b> {{ ultimo_valor.saldo_atualizado_em or '-' }}</p>
+    <p><b>Data importação:</b> {{ ultimo_valor.created_at }}</p>
+  </div>
+  <a class="btn secondary" href="/valores/{{ ultimo_valor.id }}">Abrir valores</a>
+</section>
+{% endif %}
+{% if ultima %}
+<section class="panel">
+  <h2>Última lista</h2>
+  <div class="grid2">
+    <p><b>Arquivo:</b> {{ ultima.nome_arquivo }}</p>
+    <p><b>Total:</b> {{ ultima.total_registros }}</p>
+    <p><b>Novos:</b> {{ ultima.novos_count }}</p>
+    <p><b>Removidos:</b> {{ ultima.removidos_count }}</p>
+  </div>
+  <a class="btn secondary" href="/listas/{{ ultima.id }}">Abrir lista</a>
+</section>
+{% endif %}
+<section class="panel">
+  <h2>Últimas listas</h2>
+  <table>
+    <thead><tr><th>ID</th><th>Arquivo</th><th>Total</th><th>Novos</th><th>Data</th><th></th></tr></thead>
+    <tbody>
+      {% for l in listas %}<tr><td>{{l.id}}</td><td>{{l.nome_arquivo}}</td><td>{{l.total_registros}}</td><td>{{l.novos_count}}</td><td>{{l.created_at}}</td><td><a href="/listas/{{l.id}}">ver</a></td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

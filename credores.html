@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block title %}Enviar lista{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Nova lista / upload</h1><p>Envie o ZIP ou PDF baixado no TJSP.</p></div></div>
+{% if error %}<div class="alert danger">{{ error }}</div>{% endif %}
+<section class="panel">
+  <form method="post" action="/listas/upload" enctype="multipart/form-data" class="upload-box">
+    <input type="file" name="arquivo" accept=".zip,.pdf" required>
+    <button type="submit">Processar lista</button>
+  </form>
+  <p class="hint">Por causa do CAPTCHA do TJSP, nesta versão web o download é feito manualmente no portal e o arquivo é enviado aqui.</p>
+</section>
+{% endblock %}

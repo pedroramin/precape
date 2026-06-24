@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Credores{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>Credores e-SAJ</h1><p>Últimos nomes extraídos automaticamente pelo Nº de autos.</p></div></div>
+<section class="panel">
+<table>
+<thead><tr><th>Nome</th><th>Tipo</th><th>Processo origem</th><th>DEPRE</th><th>Natureza</th><th>Status</th><th>Obs.</th><th>Link</th></tr></thead>
+<tbody>
+{% for r in rows %}
+<tr><td><strong>{{r.credor_nome or '-'}}</strong></td><td>{{r.tipo_participacao or '-'}}</td><td>{{r.processo_origem}}</td><td>{{r.processo_depre}}</td><td>{{r.natureza}}</td><td>{{r.status}}</td><td>{{r.observacao or ''}}</td><td>{% if r.link_esaj %}<a target="_blank" href="{{r.link_esaj}}">abrir</a>{% else %}-{% endif %}</td></tr>
+{% endfor %}
+</tbody></table>
+</section>
+{% endblock %}

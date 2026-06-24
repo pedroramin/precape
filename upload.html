@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Precatórios MVP{% endblock %}</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  {% if user %}
+  <aside class="sidebar">
+    <div class="brand">Precatórios<span>Web</span></div>
+    <nav>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/listas">Listas / análises</a>
+      <a href="/listas/upload">Nova lista</a>
+      <a href="/logout">Sair</a>
+    </nav>
+  </aside>
+  {% endif %}
+  <main class="main {% if not user %}main-login{% endif %}">
+    {% if flash %}<div class="alert {{ flash.level }}">{{ flash.message }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>
